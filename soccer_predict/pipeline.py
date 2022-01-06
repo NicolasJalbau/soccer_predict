@@ -1,3 +1,5 @@
+# pylint: disable=missing-module-docstring
+
 import numpy as np
 import pandas as pd
 from sklearn.pipeline import make_pipeline
@@ -7,6 +9,15 @@ from sklearn.model_selection import train_test_split, cross_val_score, GridSearc
 #from sklearn.metrics import make_scorer
 
 def data_split(data, list_y, list_X, classification):
+    """
+    Paramètres obligatoires:
+
+        data: dataset (pd.DataFrame)
+        list_y: liste des colonnes à conserver pour y (list)
+        list_X: liste des colonnes à DROP pour X (list)
+        classification: type de tâche (classification=True/False)
+
+    """
     X = data.drop(columns=list_X)
     y = data[list_y]
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
@@ -21,6 +32,17 @@ def pipeline(scaler='StandardScaler',
             model_path='sklearn.linear_model',
             model_name='LinearRegression',
             params={}, classification=False):
+    """
+    Paramètres optionnels:
+
+        scaler: nom du scaler à utiliser dans le pipe (str, ex: "RobustScaler")
+        model_path: chemin d'accès à la famille du modèle à utiliser dans le pipe (str, ex: "sklearn.neighbors")
+        model_name: nom du modèle à utiliser (str, ex:"KNeighborsRegressor")
+        params: dictionnaire contenant les hyperparamètres du modèle (dict, ex:{"n_neighbors": 5, "weights": 'uniform'})
+        classification: type de tâche (classification=True/False)
+
+        Si classification=True le modèle est inséré dans un MultiOutputRegressor
+    """
     try:
         sc = getattr(
                 __import__('sklearn.preprocessing', fromlist=[scaler]), scaler)
@@ -39,7 +61,18 @@ def pipeline(scaler='StandardScaler',
         return make_pipeline(imported_scaler, MultiOutputRegressor(import_model))
 
 def cross_validation_score(pipe, data, list_y, list_X, cv=5, classification=False):
-    
+    """
+    Paramètres obligatoires:
+
+        pipe: pipeline utilisé pour la cross validation(sklearn.pipeline.Pipeline)
+        data: dataframe pour la cross validation(pd.DataFrame)
+        list_y: liste des colonnes à conserver pour y (list)
+        list_X: liste des colonnes à DROP pour X (list)
+        Paramètres optionnels:
+        cv: nombre de fold demandé pour la cross validation(int)
+        classification: type de tâche (classification=True/False)
+
+    """
     X_train, X_test, y_train, y_test = data_split(data, list_y, list_X, classification)
     cv_score = cross_val_score(pipe, X_train, y_train, cv)
     
@@ -49,6 +82,23 @@ def get_train_pipeline(data, list_y, list_X, cv=5,
                         classification=False,
                         scaler='StandardScaler',
                         model_path='sklearn.linear_model', model_name='LinearRegression', params={}, return_full_set=False):
+    """
+        Paramètres obligatoires:
+
+            data: dataframe pour la cross validation(pd.DataFrame)
+            list_y: liste des colonnes à conserver pour y (list)
+            list_X: liste des colonnes à DROP pour X (list)
+        
+        Paramètres optionnels:
+            cv: nombre de fold demandé pour la cross validation(int)
+            classification: type de tâche (classification=True/False)
+            scaler: nom du scaler à utiliser dans le pipe (str, ex: "RobustScaler")
+            model_path: chemin d'accès à la famille du modèle à utiliser dans le pipe (str, ex: "sklearn.neighbors")
+            model_name: nom du modèle à utiliser (str, ex:"KNeighborsRegressor")
+            params: dictionnaire contenant les hyperparamètres du modèle (dict, ex:{"n_neighbors": 5, "weights": 'uniform'})
+            return_full_set: indique si l'on souhaite récupérer uniquement le X_test/y_test (False) ou X_train/y_train et X_test/y_test(True)(bool)
+
+    """
     pipe = pipeline(scaler, model_path, model_name, params, classification)
     cv_score, X_train, X_test, y_train, y_test = cross_validation_score(
                                                 pipe, data, list_y, list_X, cv, classification)
@@ -71,7 +121,18 @@ def get_train_pipeline(data, list_y, list_X, cv=5,
 
 
 def grid_search(pipe, X_train, y_train,cv=5):
-    
+    """
+    Paramètres obligatoires:
+
+        pipe: pipe à grid search (pd.DataFrame)
+        X_train: X pour entrainement (pd.DataFrame)
+        y_train: y pour entrainement (pd.DataFrame)
+
+    Paramètres optionnel:
+
+        cv: nombre de fold demandé pour la cross validation(int)
+
+    """
     params = pipe.get_params()
     for k, v in params.items():
         print(f"params: {k} -- {v}")
