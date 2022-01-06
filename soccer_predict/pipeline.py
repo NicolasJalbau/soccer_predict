@@ -3,7 +3,7 @@ import pandas as pd
 from sklearn.pipeline import make_pipeline
 from sklearn.multioutput import MultiOutputRegressor
 from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import train_test_split, cross_val_score#, GridSearchCV
+from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV
 #from sklearn.metrics import make_scorer
 
 def data_split(data, list_y, list_X, classification):
@@ -68,6 +68,43 @@ def get_train_pipeline(data, list_y, list_X, cv=5,
 #                                      y_train,
 #                                      cv=5,
 #                                      scoring=foot_metric).mean()
+
+
+def grid_search(pipe, X_train, y_train,cv=5):
+    
+    params = pipe.get_params()
+    for k, v in params.items():
+        print(f"params: {k} -- {v}")
+    
+    grid_search_params = {}
+
+    while True:   
+        key = input("Enter the param you want to grid search or exit/N/n") 
+        if key.lower() in ['exit', 'n', 'q'] : break;
+        
+        if params.get(key, False):
+            value = input("Enter list of value to grid search (separator = , ):")
+            value = [v.strip() for v in value.split(',') ]
+            value = [True if v == 'True' else False if v=='False' else v for v in value ]                
+            
+            grid_search_params[key] = value
+        else:
+            print(f"{key} isn't a valid params name. Try again")
+            
+        
+    grid_search = GridSearchCV(pipe,
+                               param_grid=grid_search_params,
+                               cv=cv,
+                               n_jobs = -1
+                               )
+
+    grid_search.fit(X_train, y_train)
+    for k,v in grid_search.best_params_.items():
+        print("Result:")
+        print(f"params: {k} -- {v}")
+    print(grid_search.best_score_)
+    
+    return grid_search
 
 
 
