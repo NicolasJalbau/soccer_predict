@@ -17,7 +17,11 @@ def data_split(data, list_y, list_X, classification):
 
     """
     X = data.drop(columns=list_X)
-    y = pd.DataFrame(data[list_y])
+    if classification:
+        y = data[list_y].squeeze()
+    else:
+        y = data[list_y]
+        
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
     if classification:
         label_encoder = LabelEncoder()
