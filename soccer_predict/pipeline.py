@@ -74,7 +74,7 @@ def cross_validation_score(pipe, data, list_y, list_X, cv=5, classification=Fals
 
     """
     X_train, X_test, y_train, y_test = data_split(data, list_y, list_X, classification)
-    cv_score = cross_val_score(pipe, X_train, y_train, cv)
+    cv_score = cross_val_score(pipe, X_train, y_train, cv=cv)
     
     return cv_score, X_train, X_test, y_train, y_test
 
