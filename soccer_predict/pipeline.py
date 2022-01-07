@@ -1,5 +1,3 @@
-# pylint: disable=missing-module-docstring
-
 import numpy as np
 import pandas as pd
 from sklearn.pipeline import make_pipeline
@@ -74,9 +72,10 @@ def cross_validation_score(pipe, data, list_y, list_X, cv=5, classification=Fals
 
     """
     X_train, X_test, y_train, y_test = data_split(data, list_y, list_X, classification)
-    cv_score = cross_val_score(pipe, X_train, y_train, cv)
+
+    cv_score = cross_val_score(pipe, X_train, y_train, cv=cv)
     
-    return cv_score, X_train, X_test, y_train, y_test
+    return {'cv_score':cv_score, 'X_train':X_train, 'X_test':X_test, 'y_train':y_train, 'y_test':y_test}
 
 def get_train_pipeline(data, list_y, list_X, cv=5,
                         classification=False,
@@ -100,14 +99,20 @@ def get_train_pipeline(data, list_y, list_X, cv=5,
 
     """
     pipe = pipeline(scaler, model_path, model_name, params, classification)
-    cv_score, X_train, X_test, y_train, y_test = cross_validation_score(
-                                                pipe, data, list_y, list_X, cv, classification)
+    
+    temp_res = cross_validation_score(pipe, data, list_y, list_X, cv, classification)
+    cv_score = temp_res['cv_score']; X_train = temp_res['X_train']; X_test = temp_res['X_test']
+    y_train = temp_res['y_train']; y_test = temp_res['y_test']
+    
     pipe.fit(X_train, y_train)
     
     if return_full_set:
-        return pipe, cv_score, X_train, X_test, y_train, y_test
+        return {'pipe':pipe, 'cv_score':cv_score, 
+                'X_train':X_train, 'X_test':X_test, 
+                'y_train':y_train, 'y_test':y_test}
     else:
-        return pipe, cv_score, X_test, y_test
+        return {'pipe':pipe, 'cv_score':cv_score, 
+                'X_test':X_test,'y_test':y_test}
 # def custom_point_match(W=3, D=1, L=0)
 #     def custom_point():
 #     foot_metric = make_scorer(
@@ -124,7 +129,7 @@ def grid_search(pipe, X_train, y_train,cv=5):
     """
     Paramètres obligatoires:
 
-        pipe: pipe à grid search (pd.DataFrame)
+        pipe: pipe à grid search (sklearn.pipeline)
         X_train: X pour entrainement (pd.DataFrame)
         y_train: y pour entrainement (pd.DataFrame)
 
@@ -146,7 +151,19 @@ def grid_search(pipe, X_train, y_train,cv=5):
         if params.get(key, False):
             value = input("Enter list of value to grid search (separator = , ):")
             value = [v.strip() for v in value.split(',') ]
-            value = [True if v == 'True' else False if v=='False' else v for v in value ]                
+            temp = []
+            for v in value:
+                if isinstance(bool(v),bool) and v == 'True':
+                    temp.append(True)
+                elif isinstance(bool(v),bool) and v=='False':
+                    temp.append(False)
+                else:
+                    try:
+                        if isinstance(int(v),int):
+                            temp.append(int(v))
+                    except:
+                        temp.append(v)
+            value = temp                
             
             grid_search_params[key] = value
         else:
