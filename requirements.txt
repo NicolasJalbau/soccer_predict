@@ -28,3 +28,6 @@ joblib
 memoized-property
 termcolor
 bs4 #Beautifull soup for web scrapping
+
+# web page
+streamlit
