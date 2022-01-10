@@ -26,6 +26,7 @@ CSS = """
 h2,h3 {
     
     text-shadow: 1px 1px 2px;
+    text-align: center;
 }
 h3 {
     text-align: center;
@@ -37,7 +38,8 @@ st.write(f'<style>{CSS}</style>', unsafe_allow_html=True)
 st.markdown(f"""## {f"{match['home_club']} - {match['away_club']}"} """)
 st.markdown(f"### {date.strftime('%d %B %Y - %H:%M')}")
 
-col_home, col_away = st.columns(2)
+col_home,col_neutral, col_away = st.columns(3)
 
 col_home.markdown(f"**{match['home_club']}**")
+
 col_away.markdown(f"**{match['away_club']}**")
