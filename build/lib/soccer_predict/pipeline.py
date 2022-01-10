@@ -29,7 +29,7 @@ def data_split(data, list_y, list_X, classification):
         
     return X_train, X_test, y_train, y_test
 
-def cross_validation_score(pipe, data, list_y, list_X, classification=False, cv=5):
+def cross_validation_score(pipe, data, list_y, list_X, cv=5, classification=False):
     """
     Paramètres obligatoires:
 
