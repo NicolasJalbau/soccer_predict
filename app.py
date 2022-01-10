@@ -7,8 +7,8 @@ import json
 
 with open('raw_data/journees.txt') as f:
     data = json.load(f)
-  
-# Concatene le chiffre de la journee avec "J-"  
+
+# Concatene le chiffre de la journee avec "J-"
 liste_journees = [f'J-{j}' for j in list(data.keys())]
 
 # Récupère uniquement le chiffre de la journee selectionne par l'utilisateur
@@ -24,7 +24,7 @@ date = parser.parse(match['date'])
 
 CSS = """
 h2,h3 {
-    
+
     text-shadow: 1px 1px 2px;
     text-align: center;
 }
@@ -38,8 +38,32 @@ st.write(f'<style>{CSS}</style>', unsafe_allow_html=True)
 st.markdown(f"""## {f"{match['home_club']} - {match['away_club']}"} """)
 st.markdown(f"### {date.strftime('%d %B %Y - %H:%M')}")
 
-col_home,col_neutral, col_away = st.columns(3)
+col_home, col_en_plus, col_away = st.columns(3)
 
 col_home.markdown(f"**{match['home_club']}**")
-
+col_en_plus.markdown(" ")
 col_away.markdown(f"**{match['away_club']}**")
+
+st.markdown(f"""## Prédiction : """)
+
+# recuperation du logo home et away :
+with open('raw_data/logo_equipes.txt') as f:
+    data = json.load(f)
+
+home_club=match['home_club']
+away_club=match['away_club']
+logo_home = data[home_club]["img120"]
+logo_away = data[away_club]["img120"]
+
+prediction='home' # resultat codé en dur
+
+col_home.write(f"<img src=" + logo_home + ">", unsafe_allow_html=True)
+if prediction == 'home' or prediction == 'draw' :
+    # entourer le logo de la colonne de gauche
+    pass
+
+
+col_away.write(f"<img src=" + logo_away + ">", unsafe_allow_html=True)
+if prediction == 'away' or prediction == 'draw' :
+    # entourer le logo de la colonne de droite
+    pass
