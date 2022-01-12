@@ -174,12 +174,10 @@ def pipeline_scalers(scaler='StandardScaler',
             'homeOVA', 'homeATT', 'homeDEF', 'homeMID', 'awayOVA', 'awayATT',
             'awayDEF', 'awayMID'
         ]
-        colRob = make_column_selector(colRobustSc)
-        colSt = make_column_selector(colStandSc)
-        colMM = make_column_selector(colMinMaxSc)
-        preproc = make_column_transformer((RobustScaler(), colRob),
-                                          (StandardScaler(), colSt),
-                                          (MinMaxScaler(), colMM),
+
+        preproc = make_column_transformer((RobustScaler(), colRobustSc),
+                                          (StandardScaler(), colStandSc),
+                                          (MinMaxScaler(), colMinMaxSc),
                                           remainder='passthrough')
         return make_pipeline(preproc, CustomMultiouputwrapper(md()), Posttreat())
 
