@@ -132,7 +132,7 @@ def pipeline(scaler='StandardScaler',
         return make_pipeline(sc(), CustomMultiouputwrapper(md()),Posttreat())
 
 
-def pipeline_scalers(scaler='StandardScaler',
+def pipeline_scalers(
                      model_path='sklearn.linear_model',
                      model_name='LinearRegression',
                      classification=False):
