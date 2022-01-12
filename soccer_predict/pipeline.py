@@ -7,6 +7,9 @@ from sklearn.model_selection import train_test_split, cross_val_score, GridSearc
 from sklearn.metrics import make_scorer
 from sklearn.base import ClassifierMixin, BaseEstimator
 from sklearn import set_config; set_config(display='diagram')
+from sklearn.compose import make_column_transformer
+from sklearn.compose import make_column_selector
+from sklearn.preprocessing import RobustScaler, StandardScaler, MinMaxScaler
 
 def data_split(data, list_y, list_X, classification):
     """
@@ -26,7 +29,7 @@ def data_split(data, list_y, list_X, classification):
         label_encoder = LabelEncoder()
         y_train = label_encoder.fit_transform(y_train)
         y_test = label_encoder.transform(y_test)
-        
+
     return X_train, X_test, y_train, y_test
 
 def cross_validation_score(pipe, data, list_y, list_X, classification=False, cv=5):
@@ -47,13 +50,13 @@ def cross_validation_score(pipe, data, list_y, list_X, classification=False, cv=
         cv_score = cross_val_score(pipe, X_train, y_train, cv=cv,scoring='accuracy')
     else:
         cv_score = cross_val_score(pipe, X_train, y_train, cv=cv,scoring=make_scorer(custom_score))
-    
+
     return {'cv_score':cv_score, 'X_train':X_train, 'X_test':X_test, 'y_train':y_train, 'y_test':y_test}
 
 class Posttreat(BaseEstimator, ClassifierMixin):
     def __init__(self, indice_tole =0.1):
         self.indice_tole = indice_tole
-    
+
     def fit(self,X, y):
         return self
     def predict(self, X, y=None):
@@ -63,9 +66,9 @@ class Posttreat(BaseEstimator, ClassifierMixin):
         y_pred['res'] = y_pred[0]-y_pred[1]
         # conversion des résultats pour calcul du score
         y_pred_new = y_pred['res'].apply(lambda x: 3 if x > self.indice_tole else 0 if x < -self.indice_tole else 1)
-        
+
         return (y_pred_new.reset_index(drop=True))
-    
+
 def custom_score(y_t, y_p, indice_tol=0.1):
     """
     Paramètres obligatoires:
@@ -76,9 +79,9 @@ def custom_score(y_t, y_p, indice_tol=0.1):
     Paramètres optionnel:
 
         indice_tol: Indice de tolérance: différence déterminant l'intervalle comprenant les matchs nuls dans la prédiction.(float)
-                    Exemple: indice_tol=0.1 -> Tout les matchs ayant une différence de buts entre [0.1|-0.1] sont un résultat nul 
+                    Exemple: indice_tol=0.1 -> Tout les matchs ayant une différence de buts entre [0.1|-0.1] sont un résultat nul
     """
-    
+
     # réassignation des argument en pd.DataFrame
     y_pred = pd.DataFrame(y_p)
     y_test = pd.DataFrame(y_t)
@@ -90,15 +93,15 @@ def custom_score(y_t, y_p, indice_tol=0.1):
     # calcul de l'accuracy
     accuracy = (y_pred - y_test_new).value_counts()[0]\
     /(y_pred - y_test_new).value_counts().sum()
-    
+
     return accuracy
 
 class CustomMultiouputwrapper(MultiOutputRegressor):
-        def transform(self, X, y=None):
-            return self.predict(X)
-        def fit_tranform(self, X, y):
-            return self.fit(X, y).predict(X)
-    
+    def transform(self, X, y=None):
+        return self.predict(X)
+    def fit_tranform(self, X, y):
+        return self.fit(X, y).predict(X)
+
 
 def pipeline(scaler='StandardScaler',
             model_path='sklearn.linear_model',
@@ -117,17 +120,67 @@ def pipeline(scaler='StandardScaler',
         sc = getattr(__import__('sklearn.preprocessing', fromlist=[scaler]), scaler)
     except:
         return f"scaler:{scaler} inconnu"
-    
+
     try:
         md = getattr(__import__(model_path, fromlist=[model_name]), model_name)
     except:
         return f"model {model_name} ou {model_path} inconnu"
-    
+
     if classification:
         return make_pipeline(sc(), md())
     else:
         return make_pipeline(sc(), CustomMultiouputwrapper(md()),Posttreat())
-    
+
+
+def pipeline_scalers(scaler='StandardScaler',
+                     model_path='sklearn.linear_model',
+                     model_name='LinearRegression',
+                     classification=False):
+    """
+    Paramètres optionnels:
+
+        scaler: nom du scaler à utiliser dans le pipe (str, ex: "RobustScaler")
+        model_path: chemin d'accès à la famille du modèle à utiliser dans le pipe (str, ex: "sklearn.neighbors")
+        model_name: nom du modèle à utiliser (str, ex:"KNeighborsRegressor")
+        classification: type de tâche (classification=True/False)
+
+        Si classification=True le modèle est inséré dans un MultiOutputRegressor
+    """
+    try:
+        sc = getattr(__import__('sklearn.preprocessing', fromlist=[scaler]),
+                     scaler)
+    except:
+        return f"scaler:{scaler} inconnu"
+
+    try:
+        md = getattr(__import__(model_path, fromlist=[model_name]), model_name)
+    except:
+        return f"model {model_name} ou {model_path} inconnu"
+
+    if classification:
+        return make_pipeline(sc(), md())
+    else:
+        colRobustSc = [
+            'Homeshots', 'Homedeep', 'Homeppda', 'Homefouls', 'HomeredCards',
+            'Awaygoals', 'AwayxGoals', 'Awayshots', 'Awaydeep', 'Awayppda',
+            'Awayfouls', 'AwayredCards'
+        ]
+        colStandSc = [
+            'Homegoals', 'HomexGoals', 'HomeshotsOnTarget', 'Homecorners',
+            'HomeyellowCards', 'AwayshotsOnTarget', 'Awaycorners',
+            'AwayyellowCards'
+        ]
+        colMinMaxSc = [
+            'homeOVA', 'homeATT', 'homeDEF', 'homeMID', 'awayOVA', 'awayATT',
+            'awayDEF', 'awayMID'
+        ]
+
+        preproc = make_column_transformer((RobustScaler(), colRobustSc),
+                                          (StandardScaler(), colStandSc),
+                                          (MinMaxScaler(), colMinMaxSc),
+                                          remainder='passthrough')
+        return make_pipeline(preproc, CustomMultiouputwrapper(md()), Posttreat())
+
 
 def get_train_pipeline(data, list_y, list_X, cv=5,
                         classification=False,
@@ -139,7 +192,7 @@ def get_train_pipeline(data, list_y, list_X, cv=5,
             data: dataframe pour la cross validation(pd.DataFrame)
             list_y: liste des colonnes à conserver pour y (list)
             list_X: liste des colonnes à DROP pour X (list)
-        
+
         Paramètres optionnels:
             cv: nombre de fold demandé pour la cross validation(int)
             classification: type de tâche (classification=True/False)
@@ -156,20 +209,20 @@ def get_train_pipeline(data, list_y, list_X, cv=5,
     # récupération du score et du dataset splitté
     cv_score = temp_res['cv_score']; X_train = temp_res['X_train']; X_test = temp_res['X_test']
     y_train = temp_res['y_train']; y_test = temp_res['y_test']
-    
+
     # fit du pipeline
     pipe.fit(X_train, y_train)
-    
+
     if return_full_set:
         # renvoi du pipeline et dataset complet
-        return {'pipe':pipe, 'cv_score':cv_score, 
-                'X_train':X_train, 'X_test':X_test, 
+        return {'pipe':pipe, 'cv_score':cv_score,
+                'X_train':X_train, 'X_test':X_test,
                 'y_train':y_train, 'y_test':y_test}
     else:
         # renvoi du pipeline du split de test
-        return {'pipe':pipe, 'cv_score':cv_score, 
+        return {'pipe':pipe, 'cv_score':cv_score,
                 'X_test':X_test,'y_test':y_test}
-    
+
 
 def grid_search(pipe, X_train, y_train,cv=5):
     """
@@ -187,13 +240,13 @@ def grid_search(pipe, X_train, y_train,cv=5):
     params = pipe.get_params()
     for k, v in params.items():
         print(f"params: {k} -- {v}")
-    
+
     grid_search_params = {}
 
-    while True:   
-        key = input("Enter the param you want to grid search or exit/N/n") 
+    while True:
+        key = input("Enter the param you want to grid search or exit/N/n")
         if key.lower() in ['exit', 'n', 'q'] : break;
-        
+
         if params.get(key, False):
             value = input("Enter list of value to grid search (separator = , ):")
             value = [v.strip() for v in value.split(',') ]
@@ -209,13 +262,13 @@ def grid_search(pipe, X_train, y_train,cv=5):
                             temp.append(int(v))
                     except:
                         temp.append(v)
-            value = temp                
-            
+            value = temp
+
             grid_search_params[key] = value
         else:
             print(f"{key} isn't a valid params name. Try again")
-            
-        
+
+
     grid_search = GridSearchCV(pipe,
                                param_grid=grid_search_params,
                                cv=cv,
@@ -228,5 +281,5 @@ def grid_search(pipe, X_train, y_train,cv=5):
         print("Result:")
         print(f"params: {k} -- {v}")
     print(grid_search.best_score_)
-    
+
     return grid_search
